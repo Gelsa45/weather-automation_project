@@ -1,93 +1,157 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weather Automation</title>
+  <title>SkyNotify - Weather Alerts</title>
   <style>
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      padding: 40px;
-      max-width: 600px;
-      margin: auto;
-      background: #f1f5f9;
+      background: linear-gradient(to top, #87ceeb 0%, #f0f9ff 100%);
+      overflow-x: hidden;
     }
-    h1 {
-      color: #1e293b;
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+      margin-top: 20px;
     }
-    input, button {
+
+    form#alertForm {
+      max-width: 450px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    form#alertForm label {
+      display: block;
+      margin-bottom: 12px;
+      color: #555;
+      font-weight: 600;
+    }
+
+    form#alertForm input[type="text"],
+    form#alertForm input[type="email"] {
       width: 100%;
+      max-width: 400px;
       padding: 10px;
-      margin-top: 10px;
       border-radius: 5px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #bbb;
       box-sizing: border-box;
+      font-size: 1rem;
+      margin-top: 4px;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
     }
-    button {
-      background-color: #3b82f6;
+
+    form#alertForm button {
+      background: #007acc;
       color: white;
       border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
       cursor: pointer;
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto 0 auto;
+      display: block;
+      transition: background 0.3s ease;
     }
-    button:hover {
-      background-color: #2563eb;
+
+    form#alertForm button:hover {
+      background: #005fa3;
     }
-    .message {
-      margin-top: 20px;
-      font-weight: bold;
+
+    #message {
+      max-width: 450px;
+      margin: 15px auto;
+      text-align: center;
+      font-weight: 600;
+      color: #007acc;
     }
+
+    /* Clouds */
+
+    .cloud {
+      position: fixed;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.8;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+      animation-name: moveCloud;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      z-index: -1;
+    }
+
+    .cloud1 {
+      width: 150px;
+      height: 80px;
+      top: 20%;
+      left: -150px;
+      animation-duration: 40s;
+    }
+
+    .cloud2 {
+      width: 120px;
+      height: 60px;
+      top: 40%;
+      left: -120px;
+      animation-duration: 30s;
+      animation-delay: 15s;
+    }
+
+    .cloud3 {
+      width: 180px;
+      height: 90px;
+      top: 70%;
+      left: -180px;
+      animation-duration: 50s;
+      animation-delay: 30s;
+    }
+
+    @keyframes moveCloud {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(110vw);
+      }
+    }
+
   </style>
 </head>
 <body>
 
-  <h1>Weather Report via Email</h1>
-  <form id="weatherForm">
-    <input type="text" id="name" placeholder="Your Name" required />
-    <input type="email" id="email" placeholder="Your Email" required />
-    <input type="text" id="city" placeholder="Your City" required />
-    <button type="submit">Get Weather Report</button>
+  <h1>SkyNotify</h1>
+  <h2>Subscribe for Weather Alerts</h2>
+
+  <form id="alertForm">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required />
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required />
+
+    <label for="city">City:</label>
+    <input type="text" id="city" name="city" required />
+
+    <button type="submit">Submit</button>
   </form>
 
-  <div class="message" id="message"></div>
+  <div id="message"></div>
 
-  <script>
-    const form = document.getElementById('weatherForm');
-    const messageDiv = document.getElementById('message');
+  <!-- Cloud elements -->
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+  <div class="cloud cloud3"></div>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const city = document.getElementById('city').value.trim();
-
-      const payload = { name, email, city };
-
-      try {
-        const response = await fetch('http://localhost:3000/submit', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          messageDiv.style.color = 'green';
-          messageDiv.textContent = data.message;
-        } else {
-          messageDiv.style.color = 'red';
-          messageDiv.textContent = data.error || 'Something went wrong.';
-        }
-      } catch (err) {
-        messageDiv.style.color = 'red';
-        messageDiv.textContent = 'Server error. Please try again later.';
-        console.error(err);
-      }
-    });
-  </script>
-
+  <script src="script.js"></script>
 </body>
 </html>
