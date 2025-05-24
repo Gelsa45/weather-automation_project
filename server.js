@@ -1,75 +1,80 @@
 const express = require('express');
-const path = require('path');
-const fetch = require('node-fetch');
+//const fetch = require('node-fetch');
+// For Node.js CommonJS modules:
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 const nodemailer = require('nodemailer');
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(express.json());
+// Middleware to serve static files and parse form & JSON data
+app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-// Serve index.html on root
+// Serve the main HTML page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// POST /submit to handle form submission
+// Handle form submission
 app.post('/submit', async (req, res) => {
-  const { name, email, city } = req.body;
-
-  if (!name || !email || !city) {
-    return res.status(400).json({ error: 'All fields are required.' });
-  }
-
   try {
-    // Fetch weather data from OpenWeatherMap API
-    const apiKey = '45db7d511f491ccaddc97edc24465de7';  // <-- Replace with your API key
-    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+    const { city, email } = req.body;
 
-    const weatherResponse = await fetch(weatherUrl);
-    if (!weatherResponse.ok) {
-      return res.status(404).json({ error: 'City not found.' });
+    if (!city || !email) {
+      return res.status(400).json({ error: 'City and email are required' });
     }
+
+    // Fetch weather data
+    const apiKey = process.env.WEATHER_API_KEY;
+    const weatherResponse = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
+    );
     const weatherData = await weatherResponse.json();
 
-    // Compose email with weather alert
+    if (weatherData.cod !== 200) {
+      return res.status(404).json({ error: 'City not found' });
+    }
+
+    const weatherReport = `
+      Weather in ${weatherData.name}:
+      Temperature: ${weatherData.main.temp}°C
+      Condition: ${weatherData.weather[0].description}
+      Humidity: ${weatherData.main.humidity}%
+      Wind Speed: ${weatherData.wind.speed} m/s
+    `;
+
+    // Send email using nodemailer
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'gelsagreenson@gmail.com',        // <-- Replace with your Gmail address
-        pass: 'fygs jwqs upcq hqdj',            // <-- Replace with your app password or OAuth token
-      },
+        user: process.env.EMAIL_USER,       // Your Gmail address
+        pass: process.env.EMAIL_PASS        // Your Gmail App Password
+      }
     });
 
     const mailOptions = {
-      from: '"SkyNotify" <your.email@gmail.com>', // sender address
+      from: process.env.EMAIL_USER,
       to: email,
-      subject: `Weather Alert for ${city}`,
-      text: `Hello ${name},
-
-Here is the current weather in ${city}:
-
-Temperature: ${weatherData.main.temp} °C
-Weather: ${weatherData.weather[0].description}
-Humidity: ${weatherData.main.humidity}%
-Wind Speed: ${weatherData.wind.speed} m/s
-
-Thank you for subscribing to SkyNotify!
-`,
+      subject: `Weather Report for ${weatherData.name}`,
+      text: weatherReport
     };
 
     await transporter.sendMail(mailOptions);
 
-    return res.json({ message: 'Weather alert sent successfully!' });
+    res.json({ message: 'Weather report sent successfully!' });
+
   } catch (error) {
     console.error('Error in /submit:', error);
-    return res.status(500).json({ error: 'Something went wrong on the server.' });
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
